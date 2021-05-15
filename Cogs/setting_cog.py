@@ -9,7 +9,7 @@ from discord.ext.commands import (
     Command,
     group,
 )
-from Cogs.app import table, make_embed as me, role_checker as ac, mymethods as mm
+from Cogs.app import make_embed as me, mymethods as mm
 
 
 class Setting(Cog):

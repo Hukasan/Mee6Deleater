@@ -93,15 +93,25 @@ class Help(HelpCommand):
         # opt = me.MyEmbed
         opt = self.dfembed.clone(self.context)
         opt.change(
-            header="ℹ機能説明",
+            header="ℹBotInfo",
             thumbnail=True,
-            description=(
-                f"{self.context.bot.description}\n"
-                f"先頭文字は **{str(self.context.bot.command_prefix[0])}** です\n"
-                f"**{self.context.prefix}help**\n--{self.command_attrs['description']}\n{content}"
+            title=self.context.bot.user.name,
+            description=str(
+                f"⌘prifex=> **{str(self.context.bot.command_prefix[0])}** \n" f"{self.context.bot.description}\n"
             ),
             bottoms_sub=self.counts[: (count - 1)],
             bottom_args=cog_name_list,
+        )
+        opt.add(
+            name="> Command List",
+            value=f"**{self.context.prefix}help**\n--{self.command_attrs['description']}\n" f"{content}",
+        )
+        opt.add(name="> Invite click here⇓", value=f"{self.context.bot.config['SETUP']['INVITE']}")
+        opt.add(
+            name=f"> Suport click here⇓",
+            value=str(
+                f"{self.context.bot.config['SETUP']['SERVER']}\r" f"{self.context.bot.config['SETUP']['GITHUB']}"
+            ),
         )
         await opt.sendEmbed()
 

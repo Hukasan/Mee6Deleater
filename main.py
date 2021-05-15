@@ -20,15 +20,16 @@ intents.dm_messages = False
 intents.dm_reactions = False
 
 setup = jis("setup").get()
-
+print((setup["PREFIX"]))
 if __name__ == "__main__":
     bot = Bot(
-        command_prefix=["?", "？"],
-        description=setup["DESCRIPTION"],
+        command_prefix=setup["PREFIX"],
+        description=setup["DESC"],
         intents=intents,
         case_insensitive=True,
     )
     bot.config = {
+        "SETUP": setup,
         "funcs": {},
         "ready_is_road_once_flag": False,
         "loop_functions": [],
