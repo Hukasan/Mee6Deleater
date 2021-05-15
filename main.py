@@ -20,7 +20,7 @@ intents.dm_messages = False
 intents.dm_reactions = False
 
 setup = jis("setup").get()
-print((setup["PREFIX"]))
+
 if __name__ == "__main__":
     bot = Bot(
         command_prefix=setup["PREFIX"],
@@ -28,8 +28,9 @@ if __name__ == "__main__":
         intents=intents,
         case_insensitive=True,
     )
+    bot.setup = jis("setup")
+    bot.db = jis("servers")
     bot.config = {
-        "SETUP": setup,
         "funcs": {},
         "ready_is_road_once_flag": False,
         "loop_functions": [],

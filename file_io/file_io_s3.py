@@ -26,6 +26,7 @@ class json_io_s3:
 
 
 if __name__ == "__main__":
+    name = "servers"
     name = "setup"
     with open("testfolder/" + name + ".json") as f:
         data = json.load(f)

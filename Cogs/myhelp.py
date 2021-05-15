@@ -82,6 +82,7 @@ class Help(HelpCommand):
         content = str()
         count = 1
         cog_name_list = list()
+        setup = self.context.bot.setup.get()
         cog = Cog
         for cog in mapping:
             cog_name = cog.qualified_name if cog else self.no_category_name
@@ -106,12 +107,10 @@ class Help(HelpCommand):
             name="> Command List",
             value=f"**{self.context.prefix}help**\n--{self.command_attrs['description']}\n" f"{content}",
         )
-        opt.add(name="> Invite click here⇓", value=f"{self.context.bot.config['SETUP']['INVITE']}")
+        opt.add(name="> Invite click here⇓", value=f"{setup['INVITE']}")
         opt.add(
             name=f"> Suport click here⇓",
-            value=str(
-                f"{self.context.bot.config['SETUP']['SERVER']}\r" f"{self.context.bot.config['SETUP']['GITHUB']}"
-            ),
+            value=str(f"{setup['SERVER']}\r" f"{setup['GITHUB']}"),
         )
         await opt.sendEmbed()
 
