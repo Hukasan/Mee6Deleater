@@ -1,6 +1,7 @@
 from discord import Emoji
 from discord.ext.commands import Cog, Bot, HelpCommand, Group, Command, Context
-from Cogs.app import make_embed as me, mymethods as mm
+from Apps.make_embed import MyEmbed
+from Apps.mymethods import lastone
 
 EMBED_IDENTIFIER = "HELP_TABLE"
 
@@ -12,7 +13,7 @@ class Help(HelpCommand):
         self.command_attrs["description"] = "このメッセージを表示"
         self.command_attrs["help"] = "このBOTのヘルプコマンドです。"
         self.command_attrs["aliases"] = ["he", "herupu"]
-        self.dfembed = me.MyEmbed().default_embed(
+        self.dfembed = MyEmbed().default_embed(
             mention_author=True,
             footer="ℹ操作ガイド",
             footer_arg=EMBED_IDENTIFIER,
@@ -151,14 +152,14 @@ class Help(HelpCommand):
         await embed.sendEmbed(mention=mention)
 
     async def send_group_help(self, group: Group):
-        embed = me.MyEmbed
+        embed = MyEmbed
         embed = self.dfembed.clone(ctx=self.context)
         mention = str()
         # value = "`" + "`, `".join(group.aliases) + "`"
         tab = "|"
         value = "以下の言葉でも呼び出し可能です"
         count = 0
-        for a, lastone in mm.lastone(group.aliases):
+        for a, lastone in lastone(group.aliases):
             if lastone:
                 value += f"{tab}{a}```"
             elif count % 4 == 0:
@@ -207,7 +208,7 @@ class Help(HelpCommand):
     async def send_command_help(self, command: Command):
         params = " } { ".join(command.clean_params.keys())
         params = "{ " + params + " }"
-        embed = me.MyEmbed
+        embed = MyEmbed
         embed = self.dfembed.clone(ctx=self.context)
         mention = str()
         prefix = self.context.prefix if self.context.prefix else self.context.bot.command_prefix[0]
@@ -226,7 +227,7 @@ class Help(HelpCommand):
             value = "以下でも呼び出し可能(ローマ字は日本語でも可能)"
             count = 0
             tab = "|"
-            for a, lastone in mm.lastone(command.aliases):
+            for a, lastone in lastone(command.aliases):
                 if lastone:
                     value += f"{tab}{a}```"
                 elif count % 3 == 0:
@@ -257,7 +258,7 @@ class Help(HelpCommand):
         await embed.sendEmbed(mention=mention)
 
     async def send_error_message(self, error):
-        embed = me.MyEmbed(self.context)
+        embed = MyEmbed(self.context)
         embed.default_embed(header="ヘルプエラー", title="help対象が見つかりませんでした", description="入力を確認してもう一度お試しあれ")
         await embed.sendEmbed(greeting=f"{self.context.author.mention}")
 
@@ -284,7 +285,7 @@ async def era_h_table(bot: Bot, usr_id: int, ctx: Context, react: Emoji, arg: li
                 return
             count += 1
 
-    await me.MyEmbed().setTarget(ctx.channel, bot=bot).default_embed(
+    await MyEmbed().setTarget(ctx.channel, bot=bot).default_embed(
         mention=usr.mention,
         header="🙏ごめんなさい",
         title="ボタンの読み込みにしっぺいしました",

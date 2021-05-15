@@ -12,9 +12,6 @@ from discord import (
 )
 from discord.ext.commands import Cog, Bot, Context, check
 from discord.abc import GuildChannel, PrivateChannel
-from Cogs.app import table
-
-id_db = table.Servertb()
 
 
 async def isroleupper(role_id: int, user: Member, guild: Guild, ignore_same=True) -> bool:

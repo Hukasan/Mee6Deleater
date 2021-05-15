@@ -9,7 +9,7 @@ from discord import (
 )
 from discord.ext.commands import Cog, Bot, Context
 from discord.abc import GuildChannel, PrivateChannel
-from Cogs.app import extentions, make_embed as me
+from Apps.make_embed import MyEmbed, scan_footer
 
 # from datetime import datetime
 # from pytz import utc
@@ -44,7 +44,7 @@ class ReactionEvent(Cog, name="ReactionEvent"):
                     await ms.add_reaction(b)
                 await ms.add_reaction("🔼")
             else:
-                await me.MyEmbed().setTarget(ms.channel, bot=self.bot).default_embed(
+                await MyEmbed().setTarget(ms.channel, bot=self.bot).default_embed(
                     mention=ms.content,
                     header="🙏ごめんなさい",
                     title="ボタンの読み込みにしっぺいしました",
@@ -86,7 +86,7 @@ class ReactionEvent(Cog, name="ReactionEvent"):
                         usr_id=rrae.user_id,
                         ms=ms,
                         react=emoji,
-                        arg=me.scan_footer(embed=embed),
+                        arg=scan_footer(embed=embed),
                     )
             else:
                 if emoji == "🗑":

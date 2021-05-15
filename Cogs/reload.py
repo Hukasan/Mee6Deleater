@@ -9,7 +9,6 @@ from discord.ext.commands import (
     Command,
     group,
 )
-from Cogs.app import make_embed as me, mymethods as mm
 
 
 class Setting(Cog):

@@ -1,7 +1,7 @@
 from discord import Embed, Message
 
 from datetime import datetime
-from Cogs.app.mymethods import dainyu
+from Apps.mymethods import dainyu
 from copy import copy
 from emoji import UNICODE_EMOJI
 
