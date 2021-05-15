@@ -1,8 +1,5 @@
 /.vscode
 
-
-
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -143,3 +140,4 @@ dmypy.json
 cython_debug/
 pyproject.toml
 testfolder
+main_temp.py
