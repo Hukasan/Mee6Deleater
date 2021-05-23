@@ -172,7 +172,10 @@ class MyEmbed:
         return (copy(self)).setCtx(ctx)
 
     def footer_arg_add(self, value: str):
-        self.footer_arg = self.footer_arg + " " + value
+        if self.footer_arg:
+            self.footer_arg = self.footer_arg + " " + value
+        else:
+            self.footer_arg = value
 
     async def sendEmbed(self, obj=None) -> Message:
         """
@@ -247,7 +250,7 @@ class MyEmbed:
             else:
                 config["timestamp"] = self.time.isoformat()
         if (bool(self.footer)) or (bool(self.footer_arg)):
-            config["footer"] = {"text": f"{self.footer}{'@' if self.footer_arg else ''}{self.footer_arg}"}
+            config["footer"] = {"text": f"{self.footer}{'@'+self.footer_arg if self.footer_arg else ''}"}
             if isinstance(self.footer_icon, str):
                 config["footer"]["icon_url"] = str(self.footer_icon)
             elif bool(bot_info) & (isinstance(self.footer_icon, bool)) & bool(self.footer_icon):
