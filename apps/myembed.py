@@ -1,7 +1,7 @@
 from discord import Embed, Message
 
 from datetime import datetime
-from Apps.mymethods import dainyu
+from apps.mymethods import dainyu
 from copy import copy
 from emoji import UNICODE_EMOJI
 
@@ -23,6 +23,7 @@ class MyEmbed:
         self.obj = None
         self.mention = str()
         self.mention_author = False
+        self.help_mode = False
         self.title = str()  # タイトル
         self.color = 0x00FF00  # 色
         self.thumbnail = False  # 大きめのアイコン画像を表示させるかどうか
@@ -38,9 +39,10 @@ class MyEmbed:
         self.time = False
         self.dust = True
         self.footer_arg = str()
-        self.bottoms = list()
-        self.bottoms_sub = list()
-        self.bottom_args = None
+        self.bottoms_upper = (list(),)
+        self.bottoms_under = (list(),)
+        self.args_bottom_under = (list(),)
+        self.args_bottom_upper = (list(),)
         self.image_url = dict()
         self.video = dict()
 
@@ -52,12 +54,11 @@ class MyEmbed:
 
     def change(
         self,
-        time=True,
+        time=None,
         mention=str(),
         mention_author=None,
         title=None,
         color=None,
-        timestamp=str(),
         url=str(),
         description=None,
         thumbnail=False,
@@ -68,11 +69,13 @@ class MyEmbed:
         greeting=str(),
         footer_arg=str(),
         dust=None,
-        bottoms=list(),
-        bottoms_sub=list(),
-        bottom_args=None,
+        bottoms_upper=list(),
+        bottoms_under=list(),
+        args_bottom_under=None,
+        args_bottom_upper=None,
         image_url=None,
         video=None,
+        help_mode=None,
     ):
         """
         設定書き換え
@@ -86,17 +89,21 @@ class MyEmbed:
         self.greeting = dainyu(greeting, self.greeting)
         self.description = dainyu(description, self.description)
         self.footer_arg = dainyu(footer_arg, self.footer_arg)
-        self.bottoms = dainyu(bottoms, self.bottoms)
-        self.bottoms_sub = dainyu(bottoms_sub, self.bottoms_sub)
-        self.bottom_args = dainyu(bottom_args, self.bottom_args)
+        self.bottoms_under = dainyu(bottoms_under, self.bottoms_under)
+        self.bottoms_upper = dainyu(bottoms_upper, self.bottoms_upper)
+        self.args_bottom_under = dainyu(args_bottom_under, self.args_bottom_under)
+        self.args_bottom_upper = dainyu(args_bottom_upper, self.args_bottom_upper)
         self.time = dainyu(time, self.time)
         self.mention_author = dainyu(mention_author, self.mention_author)
         self.image_url = dainyu(image_url, self.image_url)
         self.video = dainyu(video, self.video)
+        self.dust = dainyu(dust, self.dust)
+        self.help_mode = dainyu(help_mode, self.help_mode)
 
     def setCtx(self, ctx):
-        self.ctx = dainyu(ctx, self.ctx)
-        self.bot = dainyu(ctx.bot, self.bot)
+        if ctx:
+            self.ctx = dainyu(ctx, self.ctx)
+            self.bot = dainyu(ctx.bot, self.bot)
         return self
 
     def setBot(self, bot):
@@ -146,52 +153,12 @@ class MyEmbed:
                         line = 0
         return ex
 
-    def default_embed(
-        self,
-        bot=None,
-        time=True,
-        mention=str(),
-        mention_author=None,
-        title=None,
-        color=None,
-        timestamp=str(),
-        url=str(),
-        description=None,
-        thumbnail=False,
-        header=str(),
-        header_icon=None,
-        footer=str(),
-        footer_icon=str(),
-        greeting=str(),
-        footer_arg=str(),
-        dust=None,
-        bottom_args=None,
-        image_url=None,
-        video=None,
-    ) -> classmethod:
+    def default_embed(self) -> classmethod:
         """
         embed初期化
         Returns:
             このクラス
         """
-        self.mention = mention
-        self.mention_author = mention_author
-        self.time = time
-        self.title = title
-        self.color = dainyu(color, self.color)
-        self.footer = footer
-        self.footer_icon = footer_icon
-        self.header = header
-        self.header_icon = header_icon
-        self.thumbnai = thumbnail
-        self.greeting = greeting
-        self.footer_arg = footer_arg
-        self.description = description
-        self.dust = dust if (dust is not None) else self.dust
-        self.bottom_args = bottom_args
-        self.image_url = image_url
-        self.video = video
-        self.timestamp = timestamp
         return self
 
     def add(self, name: str, value: str, inline=False, greeting=str(), description=str()) -> None:
@@ -204,31 +171,24 @@ class MyEmbed:
 
         return (copy(self)).setCtx(ctx)
 
-    async def sendEmbed(
-        self,
-        obj=None,
-        mention_author=None,
-        mention=str(),
-        greeting=str(),
-        bottoms=list(),
-        bottoms_sub=list(),
-        bottom_args=None,
-        dust=None,
-    ) -> Message:
+    def footer_arg_add(self, value: str):
+        self.footer_arg = self.footer_arg + " " + value
+
+    async def sendEmbed(self, obj=None) -> Message:
         """
         embed送信
         """
-        self.mention = dainyu(mention, self.mention)
-        self.mention_author = dainyu(mention_author, self.mention_author)
-        self.greeting = dainyu(greeting, self.greeting)
-        self.bottoms = dainyu(bottoms, self.bottoms)
-        self.bottoms_sub = dainyu(bottoms_sub, self.bottoms_sub)
-        self.bottom_args = dainyu(bottom_args, self.bottom_args)
         if self.mention:
             self.greeting = self.mention + self.greeting
         elif bool(self.mention_author) & bool(self.ctx):
             self.greeting = self.ctx.author.mention + self.greeting
-        self.dust = dust if dust is not None else self.dust
+        elif bool(self.help_mode) & bool(self.ctx):
+            if self.ctx.author.id == self.bot.user.id:
+                user = self.ctx.message.mentions[0]
+                if user:
+                    self.greeting = user.mention + self.greeting
+            else:
+                self.greeting = self.ctx.author.mention + self.greeting
         embed = await self.export_embed()
         obj = obj[0] if isinstance(self.obj, list) else self.obj
         if (not (self.obj)) & bool(self.target):
@@ -237,16 +197,27 @@ class MyEmbed:
             obj = self.ctx.channel
         if obj:
             ms = await obj.send(embed=embed, content=self.greeting)
-            if self.bottoms:
-                for b in self.bottoms:
+            if self.bottoms_under:
+                if self.bot.bottom_under.get(str(ms.guild.id)):
+                    self.bot.bottom_under[str(ms.guild.id)].update(
+                        {ms.id: [self.bottoms_under, self.args_bottom_under]}
+                    )
+                else:
+                    self.bot.bottom_under.update(
+                        {str(ms.guild.id): {ms.id: [self.bottoms_under, self.args_bottom_under]}}
+                    )
+            if self.bottoms_upper:
+                for b in self.bottoms_upper:
                     if b in UNICODE_EMOJI:
                         await ms.add_reaction(b)
-            if self.bottoms_sub:
-                await ms.add_reaction("🔽")
-                self.bot.config[str(ms.guild.id)]["bottoms_sub"][ms.id] = self.bottoms_sub
-                self.bot.config[str(ms.guild.id)]["bottoms"][ms.id] = self.bottoms
-            if self.bottom_args:
-                self.bot.config[str(ms.guild.id)]["bottom_args"][ms.id] = self.bottom_args
+                if self.bot.bottom_upper.get(str(ms.guild.id)):
+                    self.bot.bottom_upper[str(ms.guild.id)].update(
+                        {ms.id: [self.bottoms_upper, self.args_bottom_upper]}
+                    )
+                else:
+                    self.bot.bottom_upper.update(
+                        {str(ms.guild.id): {ms.id: [self.bottoms_upper, self.args_bottom_upper]}}
+                    )
             if self.dust:
                 await ms.add_reaction("🗑")
         return ms

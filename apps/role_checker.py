@@ -38,7 +38,7 @@ def check_role_is_upper_member():
 
     async def predicate(ctx: Context):
         return await isroleupper(
-            role_id=id_db.select(id=ctx.guild.id).serverids[0].ministarrole,
+            role_id=ctx.bot.config.adminrole,
             user=ctx.author,
             guild=ctx.guild,
         )

@@ -9,8 +9,8 @@ from discord.ext.commands import (
     Group,
     Command,
 )
-from Apps.make_embed import MyEmbed
-from Apps.inputassist import hyokiyure
+from apps.myembed import MyEmbed
+from apps.inputassist import hyokiyure
 
 EMBED_IDENTIFIER = "ERROR_CMD_HELP"
 E_CH_REACTION_ACCEPT = "🙆"
@@ -18,9 +18,7 @@ E_CH_REACTION_ACCEPT = "🙆"
 
 async def era_e_ch(bot: Bot, usr_id: int, ctx: Context, react: Emoji, arg: list):
     if str(react) == E_CH_REACTION_ACCEPT:
-        usr = bot.get_user(usr_id)
         target = arg[1]
-        bot.config[str(ctx.guild.id)]["help_author"].update({ctx.channel.id: {target: usr.mention}})
         await ctx.send_help(target)
         await ctx.message.delete()
     else:
@@ -33,20 +31,20 @@ class OutputError(Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
         self.owner = None
-        self.__error_title = "コマンドエラー"
-        self.__error_fotter = ""
+        self.__error_title = "コマンド実行時エラー"
+        self.__error_fotter = "BotError"
         self._database_error = "データ変更にエラーがおきました\r今実行した処理は行なえませんでした。"
-        self.__undefine_error_title = "予期せぬエラー"
-        self.__notice_owner_message = "おぉん　エラーってるんですけどぉ↓↓"
+        self.__undefine_error_title = "想定外のエラー"
+        self.__notice_owner_message_base = "ボット主に通達します.."
+        self.__notice_owner_message = self.__notice_owner_message_base
         self.__missing_arg_message = "そのコマンドに必要な要素指定が足りていません\r" "コマンドの詳細を表示しますか？"
         self.__permission_message = "😢指定されたコマンドを実行する権限が貴方にありません\r必要があれば、管理者まで問い合わせください"
 
     @Cog.listener()
     async def on_command_error(self, ctx: Context, error):
-        if not (self.owner):
-            self.owner = self.bot.get_user(self.bot.owner_id)
-            if self.owner:
-                self.__notice_owner_message = self.owner.mention + self.__notice_owner_message
+        self.owner = self.bot.get_user(self.bot.owner_id)
+        if self.owner:
+            self.__notice_owner_message = self.owner.mention + self.__notice_owner_message_base
         cmd = str()
         embed = MyEmbed(ctx)
         try:
@@ -114,9 +112,10 @@ class OutputError(Cog):
 
 
 def setup(bot):
-    bot.config["funcs"].update(
-        {
-            EMBED_IDENTIFIER: era_e_ch,
-        }
-    )
-    return bot.add_cog(OutputError(bot))
+    return
+    # bot.config["funcs"].update(
+    #     {
+    #         EMBED_IDENTIFIER: era_e_ch,
+    #     }
+    # )
+    # return bot.add_cog(OutputError(bot))

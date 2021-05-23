@@ -1,9 +1,14 @@
 from discord import Emoji
 from discord.ext.commands import Cog, Bot, HelpCommand, Group, Command, Context
-from Apps.make_embed import MyEmbed
-from Apps.mymethods import lastone
+import sys
+
+from apps.myembed import MyEmbed
+from file_io import file_io_s3 as fis
+from apps.mymethods import lastone
 
 EMBED_IDENTIFIER = "HELP_TABLE"
+PAGE_DOWN_BOTTOM_COG = "💠"
+PAGE_UP_BOTTOM = "🔼"
 
 
 class Help(HelpCommand):
@@ -12,16 +17,19 @@ class Help(HelpCommand):
         self.no_category_name = "Help"  # カテゴリが見つからなかった場合のカテゴリ
         self.command_attrs["description"] = "このメッセージを表示"
         self.command_attrs["help"] = "このBOTのヘルプコマンドです。"
-        self.command_attrs["aliases"] = ["he", "herupu"]
-        self.dfembed = MyEmbed().default_embed(
-            mention_author=True,
-            footer="ℹ操作ガイド",
+        self.command_attrs["aliases"] = ["he", "herupu", "へるぷ"]
+        self.help_ite = fis.json_io_s3("help").iterate()
+        self.help_dict = self.help_ite.get()
+        self.dfembed = MyEmbed().clone()
+        self.dfembed.change(
+            help_mode=True,
+            header="ℹBotInfo",
+            header_icon=False,
             footer_arg=EMBED_IDENTIFIER,
             time=False,
-            footer_icon=True,
             dust=True,
         )
-        self.counts = [
+        self.emojis = [
             "1️⃣",
             "2️⃣",
             "3️⃣",
@@ -81,54 +89,63 @@ class Help(HelpCommand):
 
     async def send_bot_help(self, mapping):
         content = str()
-        count = 1
+        count = 0
         cog_name_list = list()
-        setup = self.context.bot.setup.get()
+        setup = self.context.bot.setup
         cog = Cog
         for cog in mapping:
             cog_name = cog.qualified_name if cog else self.no_category_name
+
             if (cog_name == "Help") | (cog_name == "hide"):
                 continue
-            content += f"**{str(count)}.{cog_name}**\r"
+            content += f"**{self.emojis[count]}💠{cog_name}**\r"
             count += 1
             cog_name_list.append(cog.__class__.__name__)
         # opt = me.MyEmbed
+        self.help_dict.update({"bot": cog_name_list})
+        self.help_ite.put(self.help_dict)
         opt = self.dfembed.clone(self.context)
+        opt.down_bottom = PAGE_DOWN_BOTTOM_COG
         opt.change(
-            header="ℹBotInfo",
             thumbnail=True,
             title=self.context.bot.user.name,
             description=str(
                 f"⌘prifex=> **{str(self.context.bot.command_prefix[0])}** \n" f"{self.context.bot.description}\n"
             ),
-            bottoms_sub=self.counts[: (count - 1)],
-            bottom_args=cog_name_list,
+            bottoms_under=self.emojis[:(count)],
+            args_bottom_under=cog_name_list,
         )
         opt.add(
             name="> Command List",
-            value=f"**{self.context.prefix}help**\n--{self.command_attrs['description']}\n" f"{content}",
+            value=f"⌘**{self.context.prefix}help**\n--{self.command_attrs['description']}\n" f"{content}",
         )
         opt.add(name="> Invite click here⇓", value=f"{setup['INVITE']}")
         opt.add(
             name=f"> Suport click here⇓",
             value=str(f"{setup['SERVER']}\r" f"{setup['GITHUB']}"),
         )
+        opt.footer_arg_add("bot")
         await opt.sendEmbed()
 
     async def send_cog_help(self, cog: Cog):
         # embed = me.MyEmbed
         embed = self.dfembed.clone(ctx=self.context)
         temp = str()
-        mention = str()
         command_name_list = list()
         count = 1
         empty_message = str()
+
         if cog.walk_commands:
             for cmd in cog.walk_commands():
                 if (temp != cmd.name) & (not (cmd.root_parent)):
+                    if self.help_dict.get(cog.qualified_name):
+                        self.help_dict[cog.qualified_name].append(cmd.name)
+                    else:
+                        self.help_dict.update({cog.qualified_name: [cmd.name]})
+                    self.help_ite.put(self.help_dict)
                     temp = cmd.name
                     embed.add(
-                        name=f"> {count} ${cmd.name}",
+                        name=f"> [{count}] {self.context.bot.command_prefix[0]}{cmd.name}",
                         value=f"{cmd.description}",
                     )
                     command_name_list.append(temp)
@@ -136,25 +153,18 @@ class Help(HelpCommand):
         else:
             empty_message = "\rコマンドはありません"
         embed.change(
+            header="💠Help",
             title=f"{cog.qualified_name}",
             description=f"{cog.description}{empty_message}",
-            bottoms_sub=self.counts[: len(command_name_list)],
-            bottom_args=command_name_list,
+            bottoms_under=self.emojis[: len(command_name_list)],
+            args_bottom_under=command_name_list,
         )
-        botid = (await self.context.bot.application_info()).id
-        if self.context.author.id == botid:
-            if self.context.bot.config[str(self.context.guild.id)]["help_author"].get(self.context.channel.id):
-                mention = (
-                    self.context.bot.config[str(self.context.guild.id)]["help_author"]
-                    .get(self.context.channel.id)
-                    .get(cog.__class__.__name__)
-                )
-        await embed.sendEmbed(mention=mention)
+        embed.footer_arg_add(cog.qualified_name)
+        await embed.sendEmbed()
 
     async def send_group_help(self, group: Group):
         embed = MyEmbed
         embed = self.dfembed.clone(ctx=self.context)
-        mention = str()
         # value = "`" + "`, `".join(group.aliases) + "`"
         tab = "|"
         value = "以下の言葉でも呼び出し可能です"
@@ -188,40 +198,31 @@ class Help(HelpCommand):
                 inline=True,
             )
         prefix = self.context.prefix if self.context.prefix else self.context.bot.command_prefix[0]
+        self.help_dict[group.name] = cmd_name_list
+        self.help_ite.put(self.help_dict)
+
         embed.change(
-            header="ℹコマンド(親)ヘルプ",
+            header="⌘(親)Help",
             title=f"{prefix} {group.name} コマンド",
             description="__親cmdです、サブcmdが必要です__",
-            bottoms_sub=self.counts[: len(cmd_name_list)],
-            bottom_args=cmd_name_list,
+            bottoms_under=self.emojis[: len(cmd_name_list)],
+            args_bottom_under=cmd_name_list,
         )
-        botid = (await self.context.bot.application_info()).id
-        if self.context.author.id == botid:
-            if self.context.bot.config[str(self.context.guild.id)]["help_author"].get(self.context.channel.id):
-                mention = (
-                    self.context.bot.config[str(self.context.guild.id)]["help_author"]
-                    .get(self.context.channel.id)
-                    .get(group.name)
-                )
-        await embed.sendEmbed(mention=mention)
+        embed.footer_arg_add
+        await embed.sendEmbed(f"{group.name}")
 
     async def send_command_help(self, command: Command):
         params = " } { ".join(command.clean_params.keys())
         params = "{ " + params + " }"
         embed = MyEmbed
         embed = self.dfembed.clone(ctx=self.context)
-        mention = str()
         prefix = self.context.prefix if self.context.prefix else self.context.bot.command_prefix[0]
         embed.change(
-            header="ℹコマンドヘルプ",
-            title=f"{prefix}{command.name}",
+            header="⌘Help",
+            title=(f"**{prefix}{command.full_parent_name}__{(command.name).split('_')[-1]}__ {params}**"),
+            description=f"```{command.help}```",
         )
-        embed.add(
-            name="> How to use",
-            value=(f"**{prefix}{command.full_parent_name} __{(command.name).split('_')[-1]}__ {params}**"),
-        )
-        if command.help:
-            embed.add(name="Detil", value=f"```{command.help}```", inline=True)
+
         if command.aliases:
             # "`" + "`, `".join(command.aliases) + "`"
             value = "以下でも呼び出し可能(ローマ字は日本語でも可能)"
@@ -246,16 +247,9 @@ class Help(HelpCommand):
                 value=value,
                 inline=True,
             )
-        botid = (await self.context.bot.application_info()).id
-        # print(self.context.bot.config[str(self.context.guild.id)]["help_author"])
-        if self.context.author.id == botid:
-            if self.context.bot.config[str(self.context.guild.id)]["help_author"].get(self.context.channel.id):
-                mention = (
-                    self.context.bot.config[str(self.context.guild.id)]["help_author"]
-                    .get(self.context.channel.id)
-                    .get(f"{command.full_parent_name} {command.name}")
-                )
-        await embed.sendEmbed(mention=mention)
+
+        embed.footer_arg_add(f"{command.name}")
+        await embed.sendEmbed()
 
     async def send_error_message(self, error):
         embed = MyEmbed(self.context)
@@ -269,35 +263,26 @@ class Help(HelpCommand):
         return f"{command.qualified_name} にサブコマンドは登録されていません。"
 
 
-async def era_h_table(bot: Bot, usr_id: int, ctx: Context, react: Emoji, arg: list):
-    usr = bot.get_user(usr_id)
-    bottoms = bot.config[str(ctx.guild.id)]["bottoms_sub"].get(ctx.message.id)
-    args = bot.config[str(ctx.guild.id)]["bottom_args"].get(ctx.message.id)
-    target = str()
-    count = 0
-    if bool(bottoms) & bool(args):
-        for c in bottoms:
-            if str(react) == c:
-                target = args[count]
-                print(usr)
-                bot.config[str(ctx.guild.id)]["help_author"].update({ctx.channel.id: {target: usr.mention}})
-                await ctx.send_help(target)
-                return
-            count += 1
+async def era_h_table(bot: Bot, usr_id: int, ctx: Context, react: Emoji, footer_arg: list):
+    help_dict = fis.json_io_s3("help").get()
 
-    await MyEmbed().setTarget(ctx.channel, bot=bot).default_embed(
-        mention=usr.mention,
-        header="🙏ごめんなさい",
-        title="ボタンの読み込みにしっぺいしました",
-        description="ボットに再起動がかかり初期化された、もしくは内部エラーです",
-        dust=True,
-    ).sendEmbed()
+    for index, emoji in enumerate(bot.help_command.emojis):
+        if emoji == react:
+            target = help_dict[footer_arg[0]][index]
+            break
+
+    if target == "bot":
+        target = None
+    print(target)
+    await ctx.send_help(target)
 
 
 def setup(bot: Bot):
     bot.help_command = Help()
-    bot.config["funcs"].update(
+    bot.funcs.update(
         {
             EMBED_IDENTIFIER: era_h_table,
         }
     )
+    bot.up_bottoms.append(PAGE_UP_BOTTOM)
+    bot.down_bottoms.append(PAGE_DOWN_BOTTOM_COG)

@@ -22,5 +22,8 @@ def lastone(iterable):
 
 
 def dainyu(x, y=None):
-    ans = x if x else y
+    if x is None:
+        ans = y
+    else:
+        ans = x
     return ans

@@ -15,9 +15,9 @@ class Message_Manage(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: Message):
         if message.author.bot:
-            if int(message.author.id) == (self.bot.setup.get().get("MEE6_ID")) and message.mentions:
-                db = self.bot.db.get()
-                serverdb = db.get(message.guild.id)
+            if int(message.author.id) == (self.bot.setup.get("MEE6_ID")) and message.mentions:
+                db = self.bot.servers
+                serverdb = db.get(str(message.guild.id))
                 if serverdb:
                     delay = serverdb.get("delay")
                     if delay and serverdb.get("swich"):

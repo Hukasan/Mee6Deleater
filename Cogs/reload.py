@@ -11,12 +11,10 @@ from discord.ext.commands import (
 )
 
 
-class Setting(Cog):
+class Developper(Cog):
     """
     開発者コマンド
     """
-
-    qualified_name = "hide"
 
     def __init__(self, bot: Bot):
         self.bot = bot
@@ -24,6 +22,9 @@ class Setting(Cog):
     @is_owner()
     @command(aliases=["re", "lode", "l", "れ"], description="プログラムを再読み込み")
     async def load(self, ctx: Context):
+        """
+        プログラムを再読み込み。内部データは初期化される
+        """
         for extension in list(self.bot.extensions):
             self.bot.reload_extension(f"{extension}")
             print(f"{extension}:is_reloted")
@@ -32,4 +33,4 @@ class Setting(Cog):
 
 
 def setup(bot: Bot):
-    return bot.add_cog(Setting(bot))
+    return bot.add_cog(Developper(bot))

@@ -9,7 +9,7 @@ from discord import (
 )
 from discord.ext.commands import Cog, Bot, Context
 from discord.abc import GuildChannel, PrivateChannel
-from Apps.make_embed import MyEmbed, scan_footer
+from apps.myembed import MyEmbed, scan_footer
 
 # from datetime import datetime
 # from pytz import utc
@@ -20,7 +20,7 @@ class ReactionEvent(Cog, name="ReactionEvent"):
     """
     リアクションに対しての処理
     次に行う処理をbot.configにかんすうごと保存し、ここで呼び出す
-    識別はembedのフッターを利用している(make_embed.scan_footer)
+    識別はembedのフッターを利用している(myembed.scan_footer)
     era:embed_reaction_action
     """
 
@@ -36,37 +36,35 @@ class ReactionEvent(Cog, name="ReactionEvent"):
             if usr in ms.mentions:
                 await ms.delete()
             return
-        elif react == "🔽":
-            buttoms_sub = self.bot.config[str(ms.guild.id)]["bottoms_sub"].get(ms.id)
-            if buttoms_sub:
-                await ms.clear_reactions()
-                for b in buttoms_sub:
-                    await ms.add_reaction(b)
-                await ms.add_reaction("🔼")
-            else:
-                await MyEmbed().setTarget(ms.channel, bot=self.bot).default_embed(
-                    mention=ms.content,
-                    header="🙏ごめんなさい",
-                    title="ボタンの読み込みにしっぺいしました",
-                    description="ボットに再起動がかかり初期化された、もしくは内部エラーです",
-                    dust=True,
-                ).sendEmbed()
-                await ms.clear_reaction("🔽")
-            return
-        elif react == "🔼":
-            await ms.clear_reactions()
-            await ms.add_reaction("🔽")
-            await ms.add_reaction("🗑")
-            buttoms = self.bot.config[str(ms.guild.id)]["bottoms"].get(ms.id)
-            if buttoms:
-                for b in buttoms:
-                    await ms.add_reaction(b)
-            return
-        elif arg:
-            func = self.bot.config["funcs"].get(arg[0])
-        if func:
-            ctx = await self.bot.get_context(ms)
-            return await func(self.bot, usr_id, ctx, react, arg)
+        for count, d_b in enumerate(self.bot.down_bottoms):
+            if d_b == react:
+                buttoms_under = self.bot.bottom_under[str(ms.guild.id)].get(ms.id)[0]
+                if buttoms_under:
+                    await ms.clear_reactions()
+                    for b in buttoms_under:
+                        await ms.add_reaction(b)
+                    await ms.add_reaction(self.bot.up_bottoms[count])
+                    return
+                else:
+                    break
+        for count, u_b in enumerate(self.bot.up_bottoms):
+            if react == u_b:
+                buttoms_upper = self.bot.bottom_upper[str(ms.guild.id)].get(ms.id)[0]
+
+                if buttoms_upper:
+                    await ms.clear_reactions()
+                    await ms.add_reaction(self.bot.down_bottoms[count])
+                    await ms.add_reaction("🗑")
+                    for b in buttoms_upper:
+                        await ms.add_reaction(b)
+                    return
+                else:
+                    break
+        if arg:
+            func = self.bot.funcs.get(arg[0])
+            if func:
+                ctx = await self.bot.get_context(ms)
+                return await func(self.bot, usr_id, ctx, react, arg[1:])
 
     @Cog.listener()
     async def on_raw_reaction_add(self, rrae: RawReactionActionEvent):
